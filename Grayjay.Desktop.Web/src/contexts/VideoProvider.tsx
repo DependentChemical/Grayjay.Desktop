@@ -9,6 +9,16 @@ import StateWebsocket from "../state/StateWebsocket";
 import { DetailsBackend, IVideoLoadResult } from "../backend/DetailsBackend";
 import UIOverlay from "../state/UIOverlay";
 
+const QUEUE_PERSIST_KEY = "playbackQueue";
+interface PersistedQueue {
+    v: 1;
+    baseQueue: IPlatformVideo[];
+    shuffledQueue?: IPlatformVideo[];
+    index: number;
+    repeat: boolean;
+    state: VideoState;
+}
+
 export enum VideoState {
     Closed = 0,
     Maximized = 1,
@@ -41,6 +51,7 @@ export interface VideoContextValue {
     volume: Accessor<number>;
     reopenCount: Accessor<number>;
     urlOpenCount: Accessor<number>;
+    restorePaused: Accessor<boolean>;
     //queueType watch later, playlist en queue of undefined
     actions: {
         openVideo: (video: IPlatformVideo, time?: Duration, videoState?: VideoState) => void;
@@ -60,6 +71,7 @@ export interface VideoContextValue {
         setVolume: (volume: number) => void;
         setStartTime: (startTime: Duration | undefined) => void;
         takePreloadedVideoLoad: (url: string) => IVideoLoadResult | undefined;
+        clearRestorePaused: () => void;
     }
 };
 
@@ -80,6 +92,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
     const [volume, setVolumeInternal] = createSignal<number>(1);
     const [reopenCount, setReopenCount] = createSignal(0);
     const [urlOpenCount, setUrlOpenCount] = createSignal(0);
+    const [restorePaused, setRestorePaused] = createSignal(false);
     const shuffle = () => shuffledQueue() !== undefined;
     const queue = createMemo(() => shuffledQueue() ?? baseQueue());
     const video = createMemo(() => {
@@ -90,7 +103,44 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
         }
 
         return q[i];
-    })
+    });
+
+    let queuePersistTimer: number | undefined;
+    const clearRestorePaused = () => setRestorePaused(false);
+    const normalizePersistedState = (videoState: VideoState) => {
+        if (videoState === VideoState.Minimized || videoState === VideoState.Closed)
+            return videoState;
+        return VideoState.Maximized;
+    };
+    const persistQueueSnapshot = (immediate = false) => {
+        if (queuePersistTimer !== undefined) {
+            clearTimeout(queuePersistTimer);
+            queuePersistTimer = undefined;
+        }
+        const write = () => {
+            const q = queue();
+            const i = index();
+            const base = baseQueue();
+            if (!q || !base || i === undefined || i < 0 || i >= q.length) {
+                SettingsBackend.persistSet(QUEUE_PERSIST_KEY, null).catch(e => console.error("Failed to persist queue.", e));
+                return;
+            }
+            const snapshot: PersistedQueue = {
+                v: 1,
+                baseQueue: base,
+                shuffledQueue: shuffledQueue(),
+                index: i,
+                repeat: repeat(),
+                state: normalizePersistedState(state())
+            };
+            SettingsBackend.persistSet(QUEUE_PERSIST_KEY, snapshot).catch(e => console.error("Failed to persist queue.", e));
+        };
+        if (immediate) {
+            write();
+            return;
+        }
+        queuePersistTimer = window.setTimeout(write, 300);
+    };
 
     // Kept until the view takes it; valid only while its load is still the newest request.
     let preloadedVideoLoad: IVideoLoadResult | undefined;
@@ -98,6 +148,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
     const openVideo = (v: IPlatformVideo, time?: Duration, videoState?: VideoState) => { 
         const desiredVideoState = videoState ?? VideoState.Maximized;
         batch(() => {
+            setRestorePaused(false);
             setIndex(0);
             setStartTime(time);
             setBaseQueue([ v ]);
@@ -105,9 +156,11 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             if (state() !== desiredVideoState)
                 setState(desiredVideoState);
         });
+        persistQueueSnapshot();
     };
     const openVideoByUrl = async (url: string, time?: Duration, videoState?: VideoState) => { 
         const desiredVideoState = videoState ?? VideoState.Maximized;
+        setRestorePaused(false);
         if (state() !== desiredVideoState)
             setState(desiredVideoState);
         const requestId = DetailsBackend.nextVideoRequestId();
@@ -139,6 +192,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
                 setReopenCount(count => count + 1);
             }
         });
+        persistQueueSnapshot();
     };
     const takePreloadedVideoLoad = (url: string): IVideoLoadResult | undefined => {
         const preloaded = preloadedVideoLoad;
@@ -178,6 +232,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             if (state() !== desiredVideoState)
                 setState(desiredVideoState);
         });
+        persistQueueSnapshot();
     };
     const addToQueue = (video: IPlatformVideo) => { 
         const currentIndex = index();
@@ -199,6 +254,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
                 setShuffledQueue(insertRandomlyAfter(shuffled, currentIndex, video));
             }
         });
+        persistQueueSnapshot();
 
         const name = video.name.length > 20 ? video.name.substring(0, 20) + "..." : video.name;
         UIOverlay.toast("Queued [" + name + "]");
@@ -228,6 +284,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
                 setStartTime(undefined);
             }
         });
+        persistQueueSnapshot();
     };
     const swapInQueue = (index1: number, index2: number) => {
         const activeQueue = queue();
@@ -252,6 +309,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
                 setIndex(index1);
             }
         });
+        persistQueueSnapshot();
     };
     const setShuffle = (value: boolean) => {
         const base = baseQueue();
@@ -265,6 +323,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             setShuffledQueue(value ? shuffleAroundIndex(base, baseIndex) : undefined);
             setIndex(baseIndex);
         });
+        persistQueueSnapshot();
     };
     const closeVideo = () => {
         if (index() !== undefined || DetailsBackend.isNewestVideoLoadPending()) {
@@ -278,6 +337,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             setStartTime(undefined);
             setState(VideoState.Closed);
         });
+        persistQueueSnapshot(true);
     };
 
     const refetchWatchLater = async () => {
@@ -324,12 +384,14 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
         volume,
         reopenCount,
         urlOpenCount,
+        restorePaused,
         actions: {
             setIndex: (i: number) => {
                 batch(() => {
                     setIndex(i);
                     setStartTime(undefined);
                 });
+                persistQueueSnapshot();
             },
             openVideo,
             openVideoByUrl,
@@ -341,21 +403,49 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             setState: (videoState: VideoState) => {
                 console.info("VIDEO STATE CHANGED", videoState);
                 setState(videoState);
+                persistQueueSnapshot();
             },
-            setRepeat,
+            setRepeat: (value: boolean) => {
+                setRepeat(value);
+                persistQueueSnapshot();
+            },
             setShuffle,
             setDesiredMode,
             setTheatrePinned,
             setVolume,
             refetchWatchLater,
             setStartTime,
-            takePreloadedVideoLoad
+            takePreloadedVideoLoad,
+            clearRestorePaused
         }
     };
 
     SettingsBackend.persistGet("desiredMode", VideoMode.Theatre).then((r: VideoMode) => setDesiredModeInternal(r)).catch(e => console.error("Failed to get persistent setting 'desiredMode'.", e));
     SettingsBackend.persistGet("theatrePinned", true).then((r: boolean) => setTheatrePinnedInternal(r)).catch(e => console.error("Failed to get persistent setting 'theatrePinned'.", e));
     SettingsBackend.persistGet("volume", 1).then((r: number) => setVolumeInternal(r)).catch(e => console.error("Failed to get persistent setting 'volume'.", e));
+    SettingsBackend.persistGet(QUEUE_PERSIST_KEY, null).then((saved: PersistedQueue | null) => {
+        if (!saved || saved.v !== 1 || !Array.isArray(saved.baseQueue) || saved.baseQueue.length < 1)
+            return;
+        const base = saved.baseQueue;
+        const active = Array.isArray(saved.shuffledQueue) ? saved.shuffledQueue : base;
+        const savedIndex = typeof saved.index === "number" ? saved.index : -1;
+        if (savedIndex < 0 || savedIndex >= active.length)
+            return;
+        if (Array.isArray(saved.shuffledQueue)) {
+            const baseUrls = new Set(base.map(v => v?.url));
+            if (saved.shuffledQueue.length !== base.length || saved.shuffledQueue.some(v => !v?.url || !baseUrls.has(v.url)))
+                return;
+        }
+        batch(() => {
+            setBaseQueue(base);
+            setShuffledQueue(Array.isArray(saved.shuffledQueue) ? saved.shuffledQueue : undefined);
+            setIndex(savedIndex);
+            setRepeat(saved.repeat === true);
+            setStartTime(undefined);
+            setState(normalizePersistedState(saved.state));
+            setRestorePaused(true);
+        });
+    }).catch(e => console.error("Failed to restore persisted queue.", e));
 
     return (
         <VideoContext.Provider value={value}>

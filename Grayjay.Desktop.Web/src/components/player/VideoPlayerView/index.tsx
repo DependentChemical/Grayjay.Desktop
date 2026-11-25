@@ -105,6 +105,7 @@ interface VideoProps {
     rightButtonContainerStyle?: JSX.CSSProperties;
     onVerifyToggle?: (arg: boolean)=>boolean;
     resumePosition?: Duration;
+    autoPlayOnReady?: boolean;
     loaderUI?: JSX.Element;
     fullscreen?: boolean;
     focusable?: boolean;
@@ -676,7 +677,9 @@ const VideoPlayerView: Component<VideoProps> = (props) => {
         if (shouldSetCurrentPosition && (props.source?.isLive ?? false) === false) {
             seekLocal(getResumePosition(shouldResume, startTime));
         }
-        play();
+        if (props.autoPlayOnReady !== false) {
+            play();
+        }
         setPlaybackSpeed(props.playbackSpeed ?? 1.0);
     };
 

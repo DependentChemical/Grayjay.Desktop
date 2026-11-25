@@ -741,6 +741,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         if (isPlaying) {
             console.info("Error counter reset because video is playing", errorCounter);
             errorCounter = 0;
+            video?.actions?.clearRestorePaused?.();
         }
     };
 
@@ -1807,6 +1808,7 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
                             eventMoved={eventMoved}
                             eventRestart={eventRestart}
                             resumePosition={resumePosition$()}
+                            autoPlayOnReady={!video?.restorePaused?.()}
                             onProgress={handleVideoProgress}
                             onPositionChanged={handlePositionChanged}
                             onVideoDimensionsChanged={handleVideoDimensions} 
