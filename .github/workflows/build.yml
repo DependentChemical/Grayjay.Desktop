@@ -1,0 +1,88 @@
+﻿name: Build
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build web assets
+        shell: pwsh
+        run: |
+          cd Grayjay.Desktop.Web
+          npm ci
+          npm run build
+
+      - name: Test
+        shell: pwsh
+        run: dotnet test Grayjay.Desktop.Tests/Grayjay.Desktop.Tests.csproj -c Release
+
+  build-windows:
+    name: Build Windows x64
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build web assets
+        shell: pwsh
+        run: |
+          cd Grayjay.Desktop.Web
+          npm ci
+          npm run build
+
+      - name: Publish Windows x64
+        shell: pwsh
+        run: |
+          dotnet publish Grayjay.Desktop.CEF/Grayjay.Desktop.CEF.csproj -r win-x64 -c Release
+          $publishDir = "Grayjay.Desktop.CEF/bin/Release/net8.0/win-x64/publish"
+          $wwwroot = Join-Path $publishDir "wwwroot/web"
+          New-Item -ItemType Directory -Force -Path $wwwroot | Out-Null
+          Copy-Item -Recurse -Force "Grayjay.Desktop.Web/dist/*" $wwwroot
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          if (Test-Path dist/Grayjay.Desktop-win-x64.zip) { Remove-Item dist/Grayjay.Desktop-win-x64.zip -Force }
+          Compress-Archive -Path (Join-Path $publishDir "*") -DestinationPath dist/Grayjay.Desktop-win-x64.zip -Force
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: Grayjay.Desktop-win-x64
+          path: dist/Grayjay.Desktop-win-x64.zip
+          if-no-files-found: error

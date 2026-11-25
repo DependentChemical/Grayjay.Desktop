@@ -760,7 +760,8 @@ namespace Grayjay.Desktop
             }).Start();
             */
 
-            if (GrayjaySettings.Instance.Notifications.AppUpdates)
+            // Update checks disabled for personal fork - manual rebuild/overwrite workflow.
+            if (false && GrayjaySettings.Instance.Notifications.AppUpdates)
             {
                 StateWindow.WaitForReady(() =>
                 {
