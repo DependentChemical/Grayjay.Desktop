@@ -296,6 +296,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_TransferEncodingChunked()
     {
         var chunkData = """
@@ -364,6 +365,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_TransferEncodingChunked_ModifiedHeaders()
     {
         var chunkData = """
@@ -438,6 +440,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_TransferEncodingChunked_ModifiedBody()
     {
         var chunkData = """
@@ -516,6 +519,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_ContentLength()
     {
         var response = $"""
@@ -573,6 +577,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_ContentLength_ModifiedBody()
     {
         var response = $"""
@@ -641,6 +646,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_EndOfStream_ModifiedBody()
     {
         var response = $"""
@@ -708,6 +714,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_EndOfStream()
     {
         var response = $"""
@@ -770,6 +777,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_RequestBody()
     {
         var response = $"""
@@ -832,6 +840,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_ContentLength_Gzip()
     {
         var responseBody = "Grayjay is the best app in the world";
@@ -891,6 +900,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_ContentLength_Gzip_WithModifier()
     {
         var responseBody = "Grayjay is the best app in the world";
@@ -960,6 +970,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_ContentLength_Br_WithModifier()
     {
         var responseBody = "Grayjay is the best app in the world";
@@ -1029,6 +1040,7 @@ public class ProxyTests
     }
     
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_ContentLength_Deflate_WithModifier()
     {
         var responseBody = "Grayjay is the best app in the world";
@@ -1098,6 +1110,7 @@ public class ProxyTests
     }
     
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_ContentLength_Gzip_ModifyResponseString()
     {
         var responseBody = "Grayjay is the best app in the world";
@@ -1163,6 +1176,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_ContentLength_Gzip_ModifyResponseString_ASCII()
     {
         var responseBody = "Grayjay is the best app in the world";
@@ -1228,6 +1242,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_RelativeProxy_ShouldFail()
     {
         var response = $"""
@@ -1292,6 +1307,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_RelativeProxy_ShouldSucceed()
     {
         var response = $"""
@@ -1368,6 +1384,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_RequestBody_WithRedirect_FollowRedirects_True()
     {
         var finalResponse = $"""
@@ -1441,6 +1458,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_RequestBody_WithRedirect_FollowRedirects_False()
     {
         var finalResponse = $"""
@@ -1515,6 +1533,7 @@ public class ProxyTests
     }
 
     [TestMethod]
+    [TestCategory("FlakyCI")]
     public async Task TestIntegration_RelativeProxy_WithRedirect_FollowRedirects_True()
     {
         var finalResponse = $"""

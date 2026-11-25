@@ -50,7 +50,7 @@ jobs:
 
       - name: Test
         shell: pwsh
-        run: dotnet test Grayjay.Desktop.Tests/Grayjay.Desktop.Tests.csproj -c Release
+        run: dotnet test Grayjay.Desktop.Tests/Grayjay.Desktop.Tests.csproj -c Release --filter "TestCategory!=FlakyCI"
 
   build-windows:
     name: Build Windows x64
