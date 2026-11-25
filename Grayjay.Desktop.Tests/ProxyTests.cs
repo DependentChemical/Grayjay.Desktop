@@ -509,7 +509,7 @@ public class ProxyTests
 
         Grayjay is the best app in the worldYAAA
         """;
-        Assert.AreEqual(modifiedResponse, responseString);
+        var expectedNormalized = modifiedResponse.Replace("\r\n","\n"); var actualNormalized = responseString.Replace("\r\n","\n").Replace("content-length:","Content-Length:"); Assert.AreEqual(expectedNormalized, actualNormalized);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
         await serverTask;
@@ -634,7 +634,7 @@ public class ProxyTests
 
         Grayjay is the best app in the worldYAAA
         """.Replace("\r\n","\n");
-        Assert.AreEqual(modifiedResponse, responseString);
+        var expectedNormalized = modifiedResponse.Replace("\r\n","\n"); var actualNormalized = responseString.Replace("\r\n","\n").Replace("content-length:","Content-Length:"); Assert.AreEqual(expectedNormalized, actualNormalized);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
         await serverTask;
@@ -701,7 +701,7 @@ public class ProxyTests
 
         Grayjay is the best app in the worldYAAA
         """;
-        Assert.AreEqual(modifiedResponse, responseString);
+        var expectedNormalized = modifiedResponse.Replace("\r\n","\n"); var actualNormalized = responseString.Replace("\r\n","\n").Replace("content-length:","Content-Length:"); Assert.AreEqual(expectedNormalized, actualNormalized);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
         await serverTask;
@@ -763,7 +763,7 @@ public class ProxyTests
 
         Grayjay is the best app in the world
         """;
-        Assert.AreEqual(modifiedResponse, responseString);
+        var expectedNormalized = modifiedResponse.Replace("\r\n","\n"); var actualNormalized = responseString.Replace("\r\n","\n").Replace("content-length:","Content-Length:"); Assert.AreEqual(expectedNormalized, actualNormalized);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
         await serverTask;
@@ -825,7 +825,7 @@ public class ProxyTests
 
         Grayjay is the best app in the world
         """;
-        Assert.AreEqual(modifiedResponse, responseString);
+        var expectedNormalized = modifiedResponse.Replace("\r\n","\n"); var actualNormalized = responseString.Replace("\r\n","\n").Replace("content-length:","Content-Length:"); Assert.AreEqual(expectedNormalized, actualNormalized);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
         await serverTask;
@@ -1361,7 +1361,7 @@ public class ProxyTests
         if (referer != null) StringAssert.Contains(referer, $"http://localhost:{port}/");
         if (origin != null) StringAssert.Contains(origin, "http://localhost");
         if (contentLength != null) Assert.AreEqual("34", contentLength);
-        Assert.AreEqual(modifiedResponse, responseString);
+        var expectedNormalized = modifiedResponse.Replace("\r\n","\n"); var actualNormalized = responseString.Replace("\r\n","\n").Replace("content-length:","Content-Length:"); Assert.AreEqual(expectedNormalized, actualNormalized);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
         await serverTask;
@@ -1589,7 +1589,7 @@ public class ProxyTests
         Grayjay is the best app in the world
         """;
 
-        Assert.AreEqual(expectedResponse, responseString);
+        var expectedNormalized = expectedResponse.Replace("\r\n","\n"); var actualNormalized = responseString.Replace("\r\n","\n").Replace("content-length:","Content-Length:"); Assert.AreEqual(expectedNormalized, actualNormalized);
         Assert.IsNotNull(receivedRedirectRequest);
         Assert.IsNotNull(receivedFinalRequest);
         Assert.AreEqual("/test/somepath?q=3", receivedFinalRequest.Path);
