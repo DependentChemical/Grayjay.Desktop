@@ -172,7 +172,9 @@ public static class LocalDash
         foreach (var representation in document.Descendants(ns + "Representation"))
         {
             var url = representation.Element(ns + "BaseURL")!;
-            var mediaPath = Path.Combine(directory, url.Value);
+            var mediaName = Path.GetFileName(url.Value);
+            var mediaPath = Path.Combine(directory, mediaName);
+            url.Value = mediaName;
             var (start, end) = FindIndex(mediaPath);
             representation.Element(ns + "SegmentList")!.ReplaceWith(new XElement(ns + "SegmentBase",
                 new XAttribute("indexRange", $"{start}-{end}"), new XAttribute("indexRangeExact", "true"),

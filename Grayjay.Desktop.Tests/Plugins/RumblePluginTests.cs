@@ -1,4 +1,4 @@
-﻿using Grayjay.Engine;
+using Grayjay.Engine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,58 +16,72 @@ namespace Grayjay.Desktop.Tests.Plugins
         [TestMethod]
         public void TestHome()
         {
-            var plugin = GrayjayPlugin.FromUrl("https://plugins.grayjay.app/Rumble/RumbleConfig.json");
-            plugin.Initialize();
-
-            plugin.OnLog += (a, b) =>
+            try
             {
-                Console.WriteLine(b);
-            };
+                var plugin = GrayjayPlugin.FromUrl("https://plugins.grayjay.app/Rumble/RumbleConfig.json");
+                plugin.Initialize();
 
-            var home = plugin.GetHome();
+                plugin.OnLog += (a, b) =>
+                {
+                    Console.WriteLine(b);
+                };
 
-            var results = home.GetResults();
-            Assert.IsTrue(results.Length > 1);
-            Assert.IsNotNull(results[0].Name);
-            Assert.IsNotNull(results[0].Url);
-            Assert.IsNotNull(results[1].Name);
-            Assert.IsNotNull(results[1].Url);
+                var home = plugin.GetHome();
 
-            Console.WriteLine(JsonSerializer.Serialize(results));
+                var results = home.GetResults();
+                Assert.IsTrue(results.Length > 1);
+                Assert.IsNotNull(results[0].Name);
+                Assert.IsNotNull(results[0].Url);
+                Assert.IsNotNull(results[1].Name);
+                Assert.IsNotNull(results[1].Url);
+
+                Console.WriteLine(JsonSerializer.Serialize(results));
+            }
+            catch (Exception ex) when (ex.GetType().Name.Contains("CaptchaRequired", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains("Captcha", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Inconclusive("Rumble captcha challenged in CI: " + ex.Message);
+            }
         }
 
         [TestMethod]
         public void TestReplies()
         {
-            var plugin = GrayjayPlugin.FromUrl("https://plugins.grayjay.app/Rumble/RumbleConfig.json");
-            plugin.Initialize();
-
-            plugin.OnLog += (a, b) =>
+            try
             {
-                Console.WriteLine(b);
-            };
+                var plugin = GrayjayPlugin.FromUrl("https://plugins.grayjay.app/Rumble/RumbleConfig.json");
+                plugin.Initialize();
 
-            var home = plugin.GetHome();
-
-            var results = home.GetResults();
-            Assert.IsTrue(results.Length > 1);
-
-            var video = results.FirstOrDefault();
-
-            var videoDetails = plugin.GetContentDetails(video.Url);
-
-            var comments = plugin.GetComments(videoDetails.Url).GetResults();
-            foreach (var comment in comments.Take(5))
-            {
-                var replies = comment.GetReplies();
-                Assert.IsNotNull(replies);
-                if(replies.GetResults().Length > 0)
+                plugin.OnLog += (a, b) =>
                 {
-                    Console.WriteLine(JsonSerializer.Serialize(replies));
-                    return;
+                    Console.WriteLine(b);
+                };
+
+                var home = plugin.GetHome();
+
+                var results = home.GetResults();
+                Assert.IsTrue(results.Length > 1);
+
+                var video = results.FirstOrDefault();
+
+                var videoDetails = plugin.GetContentDetails(video.Url);
+
+                var comments = plugin.GetComments(videoDetails.Url).GetResults();
+                foreach (var comment in comments.Take(5))
+                {
+                    var replies = comment.GetReplies();
+                    Assert.IsNotNull(replies);
+                    if(replies.GetResults().Length > 0)
+                    {
+                        Console.WriteLine(JsonSerializer.Serialize(replies));
+                        return;
+                    }
                 }
+                throw new InvalidDataException("No replies found");
             }
-            throw new InvalidDataException("No replies found");
+            catch (Exception ex) when (ex.GetType().Name.Contains("CaptchaRequired", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains("Captcha", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Inconclusive("Rumble captcha challenged in CI: " + ex.Message);
+            }
         }
     }
 }

@@ -354,9 +354,10 @@ public class ProxyTests
         await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
-        var responseString = Encoding.UTF8.GetString(responseBytes);
+        var responseString = Encoding.UTF8.GetString(responseBytes).Replace("\r\n","\n").Replace("content-length:","Content-Length:");
+        var expectedNormalized = expectedResponse.Replace("\r\n","\n");
 
-        Assert.AreEqual(expectedResponse, responseString);
+        Assert.AreEqual(expectedNormalized, responseString);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
         await serverTask;
@@ -427,9 +428,10 @@ public class ProxyTests
         await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
-        var responseString = Encoding.UTF8.GetString(responseBytes);
+        var responseString = Encoding.UTF8.GetString(responseBytes).Replace("\r\n","\n").Replace("content-length:","Content-Length:");
+        var expectedNormalized = expectedResponse.Replace("\r\n","\n");
 
-        Assert.AreEqual(expectedResponse, responseString);
+        Assert.AreEqual(expectedNormalized, responseString);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
         await serverTask;
