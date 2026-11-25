@@ -35,83 +35,10 @@ jobs:
         run: |
           $script = "JustCef/cs/ensure-justcef-win.ps1"
           if (Test-Path $script) {
-            $fixedScript = @'
-param(
-  [Parameter(Mandatory=$true)][string]$Url,
-  [Parameter(Mandatory=$true)][string]$ZipPath,
-  [Parameter(Mandatory=$true)][string]$ExtractDir,
-  [Parameter(Mandatory=$true)][string]$Version
-)
-
-$ErrorActionPreference = "Stop"
-
-$markerVersion = Join-Path $ExtractDir ".justcef.version"
-$markerUrl     = Join-Path $ExtractDir ".justcef.url"
-
-function Test-DirNonEmpty([string]$Path) {
-  if (!(Test-Path -LiteralPath $Path -PathType Container)) { return $false }
-  return @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue).Count -gt 0
-}
-
-$zipBytes = [System.Text.Encoding]::UTF8.GetBytes($ZipPath.ToLowerInvariant())
-$sha = [System.Security.Cryptography.SHA256]::Create()
-$hash = ($sha.ComputeHash($zipBytes) | ForEach-Object { $_.ToString("x2") }) -join ""
-$mutexName = "Global\JustCef_$hash"
-$mutex = New-Object System.Threading.Mutex($false, $mutexName)
-
-$null = $mutex.WaitOne()
-try {
-  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ZipPath) | Out-Null
-  New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
-
-  if ((Test-Path -LiteralPath $markerVersion) `
-      -and ((Get-Content -LiteralPath $markerVersion -Raw).Trim() -eq $Version) `
-      -and (Test-Path -LiteralPath $ZipPath) `
-      -and (Test-DirNonEmpty $ExtractDir)) {
-    exit 0
-  }
-
-  if (!(Test-Path -LiteralPath $ZipPath)) {
-    Write-Host "JustCef: downloading $Url"
-    $parent = Split-Path -Parent $ZipPath
-    $tmp = Join-Path $parent ("{0}.tmp" -f [System.IO.Path]::GetRandomFileName())
-    Invoke-WebRequest -Uri $Url -OutFile $tmp -UseBasicParsing
-    Move-Item -LiteralPath $tmp -Destination $ZipPath -Force
-  }
-
-  if (Test-Path -LiteralPath $ExtractDir) {
-    Remove-Item -LiteralPath $ExtractDir -Recurse -Force
-  }
-  New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
-
-  # Use .NET ZipFile.ExtractToDirectory (supports overwrite in .NET 8+)
-  Add-Type -AssemblyName System.IO.Compression.FileSystem
-  [System.IO.Compression.ZipFile]::ExtractToDirectory($ZipPath, $ExtractDir, $true)
-
-  $entries = Get-ChildItem -LiteralPath $ExtractDir -Force
-  if ($entries.Count -eq 1 -and $entries[0].PSIsContainer) {
-    $inner = $entries[0].FullName
-    $tmpFlatten = "${ExtractDir}.flatten"
-    if (Test-Path -LiteralPath $tmpFlatten) { Remove-Item -LiteralPath $tmpFlatten -Recurse -Force }
-    New-Item -ItemType Directory -Force -Path $tmpFlatten | Out-Null
-
-    Get-ChildItem -LiteralPath $inner -Force | ForEach-Object {
-      Move-Item -LiteralPath $_.FullName -Destination $tmpFlatten -Force
-    }
-
-    Remove-Item -LiteralPath $ExtractDir -Recurse -Force
-    Move-Item -LiteralPath $tmpFlatten -Destination $ExtractDir -Force
-  }
-
-  Set-Content -LiteralPath $markerVersion -Value $Version -NoNewline
-  Set-Content -LiteralPath $markerUrl -Value $Url -NoNewline
-}
-finally {
-  $mutex.ReleaseMutex() | Out-Null
-  $mutex.Dispose()
-}
-'@
-            Set-Content $script -Value $fixedScript -NoNewline
+            $b64 = "cGFyYW0oDQogIFtQYXJhbWV0ZXIoTWFuZGF0b3J5PSR0cnVlKV1bc3RyaW5nXSRVcmwsDQogIFtQYXJhbWV0ZXIoTWFuZGF0b3J5PSR0cnVlKV1bc3RyaW5nXSRaaXBQYXRoLA0KICBbUGFyYW1ldGVyKE1hbmRhdG9yeT0kdHJ1ZSldW3N0cmluZ10kRXh0cmFjdERpciwNCiAgW1BhcmFtZXRlcjooTWFuZGF0b3J5PSR0cnVlKV1bc3RyaW5nXSRWZXJzaW9uDQopDQoJJEVycm9yQWN0aW9uUHJlZmVyZW5jZSA9ICJTdG9wIg0KDQokbWFya2VyVmVyc2lvbiA9IEpvaW4tUGF0aCAkRXh0cmFjdERpciAiLmp1c3RjZWYudmVyc2lvbiINCiRtYXJrZXJVcmwgICAgID0gSm9pbi1QYXRoICRFeHRyYWN0RGlyICIuanVzdGNlZi51cmwiDQoNCmZ1bmN0aW9uIFRlc3QtRGlyTm9uRW1wdHkoW3N0cmluZ10kUGF0aCkgew0KICBpZiAoIShUZXN0LVBhdGggLUxpdGVyYWxQYXRoICRQYXRoIC1QYXRoVHlwZSBDb250YWluZXIpKSB7IHJldHVybiAkZmFsc2UgfQ0KICByZXR1cm4gQChHZXQtQ2hpbGRJdGVtIC1MaXRlcmFsUGF0aCAkUGF0aCAtRm9yY2UgLUVycm9yQWN0aW9uIFNpbGVudGx5Q29udGludWUpLkNvdW50IC1ndCAwDQp9DQoNCiR6aXBCeXRlcyA9IFtTeXN0ZW0uVGV4dC5FbmNvZGluZ106OlVURjguR2V0Qnl0ZXMoJFppcFBhdGguVG9Mb3dlckludmFyaWFudCgpKQ0KJHNoYSA9IFtTeXN0ZW0uU2VjdXJpdHkuQ3J5cHRvZ3JhcGh5LlNIQTI1Nl06OkNyZWF0ZSgpDQokaGFzaCA9ICgkc2hhLkNvbXB1dGVIYXNoKCR6aXBCeXRlcykgfCBGb3JFYWNoLU9iamVjdCB7ICRfLlRvU3RyaW5nKCJ4MiIpIH0pIC1qb2luICIiDQokbXV0ZXhOYW1lID0gIkdsb2JhbFxKdXN0Q2VmXyRoYXNoIg0KJG11dGV4ID0gTmV3LU9iamVjdCBTeXN0ZW0uVGhyZWFkaW5nLk11dGV4KCRmYWxzZSwgJG11dGV4TmFtZSkNCg0KJG51bGwgPSAkbXV0ZXguV2FpdE9uZSgpDQp0cnkgew0KICBOZXctSXRlbSAtSXRlbVR5cGUgRGlyZWN0b3J5IC1Gb3JjZSAtUGF0aCAoU3BsaXQtUGF0aCAtUGFyZW50ICRaaXBQYXRoKSB8IE91dC1OdWxsDQogIE5ldy1JdGVtIC1JdGVtVHlwZSBEaXJlY3RvcnkgLUZvcmNlIC1QYXRoICRFeHRyYWN0RGlyIHwgT3V0LU51bGwNCg0KICBpZiAoKFRlc3QtUGF0aCAtTGl0ZXJhbFBhdGggJG1hcmtlclZlcnNpb24pIGANCiAgICAgIC1hbmQgKChHZXQtQ29udGVudCAtTGl0ZXJhbFBhdGggJG1hcmtlclZlcnNpb24gLVJhdykuVHJpbSgpIC1lcSAkVmVyc2lvbikgYA0KICAgICAgLWFuZCAoVGVzdC1QYXRoIC1MaXRlcmFsUGF0aCAkWmlwUGF0aCkgYA0KICAgICAgLWFuZCAoVGVzdC1EaXJOb25FbXB0eSAkRXh0cmFjdERpcikpIHsNCiAgICBleGl0IDANCiAgfQ0KDQogIGlmICghKFRlc3QtUGF0aCAtTGl0ZXJhbFBhdGggJFppcFBhdGgpKSB7DQogICAgV3JpdGUtSG9zdCAiSnVzdENlZjogZG93bmxvYWRpbmcgJFVybCINCiAgICAkcGFyZW50ID0gU3BsaXQtUGF0aCAtUGFyZW50ICRaaXBQYXRoDQogICAgJHRtcCA9IEpvaW4tUGF0aCAkcGFyZW50ICgiezB9LnRtcCIgLWYgW1N5c3RlbS5JTy5QYXRoXTo6R2V0UmFuZG9tRmlsZU5hbWUoKSkNCiAgICBJbnZva2UtV2ViUmVxdWVzdCAtVXJpICRVcmwgLU91dEZpbGUgJHRtcCAtVXNlQmFzaWNQYXJzaW5nDQogICAgTW92ZS1JdGVtIC1MaXRlcmFsUGF0aCAkdG1wIC1EZXN0aW5hdGlvbiAkWmlwUGF0aCAtRm9yY2UNCiAgfQ0KDQogIGlmIChUZXN0LVBhdGggLUxpdGVyYWxQYXRoICRFeHRyYWN0RGlyKSB7DQogICAgUmVtb3ZlLUl0ZW0gLUxpdGVyYWxQYXRoICRFeHRyYWN0RGlyIC1SZWN1cnNlIC1Gb3JjZQ0KICB9DQogIE5ldy1JdGVtIC1JdGVtVHlwZSBEaXJlY3RvcnkgLUZvcmNlIC1QYXRoICRFeHRyYWN0RGlyIHwgT3V0LU51bGwNCg0KICAjIFVzZSAuTkVUIFppcEZpbGUuRXh0cmFjdFRvRGlyZWN0b3J5IChzdXBwb3J0cyBvdmVyd3JpdGUgaW4gLk5FVCA4KykNCiAgQWRkLVR5cGUgLUFzc2VtYmx5TmFtZSBTeXN0ZW0uSU8uQ29tcHJlc3Npb24uRmlsZVN5c3RlbQ0KICBbU3lzdGVtLklPLkNvbXByZXNzaW9uLlppcEZpbGVdOjpFeHRyYWN0VG9EaXJlY3RvcnkoJFppcFBhdGgsICRFeHRyYWN0RGlyLCAkdHJ1ZSkNCg0KICAkZW50cmllcyA9IEdldC1DaGlsZEl0ZW0gLUxpdGVyYWxQYXRoICRFeHRyYWN0RGlyIC1Gb3JjZQ0KICBpZiAoJGVudHJpZXMuQ291bnQgLWVxIDEgLWFuZCAkZW50cmllc1swXS5QU0lzQ29udGFpbmVyKSB7DQogICAgJGlubmVyID0gJGVudHJpZXNbMF0uRnVsbE5hbWUNCiAgICAkdG1wRmxhdHRlbiA9ICIke0V4dHJhY3REaXJ9LmZsYXR0ZW4iDQogICAgaWYgKFRlc3QtUGF0aCAtTGl0ZXJhbFBhdGggJHRtcEZsYXR0ZW4pIHsgUmVtb3ZlLUl0ZW0gLUxpdGVyYWxQYXRoICR0bXBGbGF0dGVuIC1SZWN1cnNlIC1Gb3JjZSB9DQogICAgTmV3LUl0ZW0gLUl0ZW1UeXBlIERpcmVjdG9yeSAtRm9yY2UgLVBhdGggJHRtcEZsYXR0ZW4gfCBPdXQtTnVsbA0KDQogICAgR2V0LUNoaWxkSXRlbSAtTGl0ZXJhbFBhdGggJGlubmVyIC1Gb3JjZSB8IEZvckVhY2gtT2JqZWN0IHsNCiAgICAgIE1vdmUtSXRlbSAtTGl0ZXJhbFBhdGggJF8uRnVsbE5hbWUgLURlc3RpbmF0aW9uICR0bXBGbGF0dGVuIC1Gb3JjZQ0KICAgIH0NCg0KICAgIFJlbW92ZS1JdGVtIC1MaXRlcmFsUGF0aCAkRXh0cmFjdERpciAtUmVjdXJzZSAtRm9yY2UNCiAgICBNb3ZlLUl0ZW0gLUxpdGVyYWxQYXRoICR0bXBGbGF0dGVuIC1EZXN0aW5hdGlvbiAkRXh0cmFjdERpciAtRm9yY2UNCiAgfQ0KDQogIFNldC1Db250ZW50IC1MaXRlcmFsUGF0aCAkbWFya2VyVmVyc2lvbiAtVmFsdWUgJFZlcnNpb24gLU5vTmV3bGluZQ0KICBTZXQtQ29udGVudCAtTGl0ZXJhbFBhdGggJG1hcmtlclVybCAtVmFsdWUgJFVybCAtTm9OZXdsaW5lDQp9DQpmaW5hbGx5IHsNCiAgJG11dGV4LlJlbGVhc2VNdXRleCgpIHwgT3V0LU51bGwNCiAgJG11dGV4LkRpc3Bvc2UoKQ0KfQ=="
+            $bytes = [Convert]::FromBase64String($b64)
+            $content = [System.Text.Encoding]::UTF8.GetString($bytes)
+            Set-Content $script -Value $content -NoNewline
           }
 
       - name: Build web assets
@@ -150,83 +77,10 @@ finally {
         run: |
           $script = "JustCef/cs/ensure-justcef-win.ps1"
           if (Test-Path $script) {
-            $fixedScript = @'
-param(
-  [Parameter(Mandatory=$true)][string]$Url,
-  [Parameter(Mandatory=$true)][string]$ZipPath,
-  [Parameter(Mandatory=$true)][string]$ExtractDir,
-  [Parameter(Mandatory=$true)][string]$Version
-)
-
-$ErrorActionPreference = "Stop"
-
-$markerVersion = Join-Path $ExtractDir ".justcef.version"
-$markerUrl     = Join-Path $ExtractDir ".justcef.url"
-
-function Test-DirNonEmpty([string]$Path) {
-  if (!(Test-Path -LiteralPath $Path -PathType Container)) { return $false }
-  return @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue).Count -gt 0
-}
-
-$zipBytes = [System.Text.Encoding]::UTF8.GetBytes($ZipPath.ToLowerInvariant())
-$sha = [System.Security.Cryptography.SHA256]::Create()
-$hash = ($sha.ComputeHash($zipBytes) | ForEach-Object { $_.ToString("x2") }) -join ""
-$mutexName = "Global\JustCef_$hash"
-$mutex = New-Object System.Threading.Mutex($false, $mutexName)
-
-$null = $mutex.WaitOne()
-try {
-  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ZipPath) | Out-Null
-  New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
-
-  if ((Test-Path -LiteralPath $markerVersion) `
-      -and ((Get-Content -LiteralPath $markerVersion -Raw).Trim() -eq $Version) `
-      -and (Test-Path -LiteralPath $ZipPath) `
-      -and (Test-DirNonEmpty $ExtractDir)) {
-    exit 0
-  }
-
-  if (!(Test-Path -LiteralPath $ZipPath)) {
-    Write-Host "JustCef: downloading $Url"
-    $parent = Split-Path -Parent $ZipPath
-    $tmp = Join-Path $parent ("{0}.tmp" -f [System.IO.Path]::GetRandomFileName())
-    Invoke-WebRequest -Uri $Url -OutFile $tmp -UseBasicParsing
-    Move-Item -LiteralPath $tmp -Destination $ZipPath -Force
-  }
-
-  if (Test-Path -LiteralPath $ExtractDir) {
-    Remove-Item -LiteralPath $ExtractDir -Recurse -Force
-  }
-  New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
-
-  # Use .NET ZipFile.ExtractToDirectory (supports overwrite in .NET 8+)
-  Add-Type -AssemblyName System.IO.Compression.FileSystem
-  [System.IO.Compression.ZipFile]::ExtractToDirectory($ZipPath, $ExtractDir, $true)
-
-  $entries = Get-ChildItem -LiteralPath $ExtractDir -Force
-  if ($entries.Count -eq 1 -and $entries[0].PSIsContainer) {
-    $inner = $entries[0].FullName
-    $tmpFlatten = "${ExtractDir}.flatten"
-    if (Test-Path -LiteralPath $tmpFlatten) { Remove-Item -LiteralPath $tmpFlatten -Recurse -Force }
-    New-Item -ItemType Directory -Force -Path $tmpFlatten | Out-Null
-
-    Get-ChildItem -LiteralPath $inner -Force | ForEach-Object {
-      Move-Item -LiteralPath $_.FullName -Destination $tmpFlatten -Force
-    }
-
-    Remove-Item -LiteralPath $ExtractDir -Recurse -Force
-    Move-Item -LiteralPath $tmpFlatten -Destination $ExtractDir -Force
-  }
-
-  Set-Content -LiteralPath $markerVersion -Value $Version -NoNewline
-  Set-Content -LiteralPath $markerUrl -Value $Url -NoNewline
-}
-finally {
-  $mutex.ReleaseMutex() | Out-Null
-  $mutex.Dispose()
-}
-'@
-            Set-Content $script -Value $fixedScript -NoNewline
+            $b64 = "cGFyYW0oDQogIFtQYXJhbWV0ZXIoTWFuZGF0b3J5PSR0cnVlKV1bc3RyaW5nXSRVcmwsDQogIFtQYXJhbWV0ZXIoTWFuZGF0b3J5PSR0cnVlKV1bc3RyaW5nXSRaaXBQYXRoLA0KICBbUGFyYW1ldGVyKE1hbmRhdG9yeT0kdHJ1ZSldW3N0cmluZ10kRXh0cmFjdERpciwNCiAgW1BhcmFtZXRlcjooTWFuZGF0b3J5PSR0cnVlKV1bc3RyaW5nXSRWZXJzaW9uDQopDQoJJEVycm9yQWN0aW9uUHJlZmVyZW5jZSA9ICJTdG9wIg0KDQokbWFya2VyVmVyc2lvbiA9IEpvaW4tUGF0aCAkRXh0cmFjdERpciAiLmp1c3RjZWYudmVyc2lvbiINCiRtYXJrZXJVcmwgICAgID0gSm9pbi1QYXRoICRFeHRyYWN0RGlyICIuanVzdGNlZi51cmwiDQoNCmZ1bmN0aW9uIFRlc3QtRGlyTm9uRW1wdHkoW3N0cmluZ10kUGF0aCkgew0KICBpZiAoIShUZXN0LVBhdGggLUxpdGVyYWxQYXRoICRQYXRoIC1QYXRoVHlwZSBDb250YWluZXIpKSB7IHJldHVybiAkZmFsc2UgfQ0KICByZXR1cm4gQChHZXQtQ2hpbGRJdGVtIC1MaXRlcmFsUGF0aCAkUGF0aCAtRm9yY2UgLUVycm9yQWN0aW9uIFNpbGVudGx5Q29udGludWUpLkNvdW50IC1ndCAwDQp9DQoNCiR6aXBCeXRlcyA9IFtTeXN0ZW0uVGV4dC5FbmNvZGluZ106OlVURjguR2V0Qnl0ZXMoJFppcFBhdGguVG9Mb3dlckludmFyaWFudCgpKQ0KJHNoYSA9IFtTeXN0ZW0uU2VjdXJpdHkuQ3J5cHRvZ3JhcGh5LlNIQTI1Nl06OkNyZWF0ZSgpDQokaGFzaCA9ICgkc2hhLkNvbXB1dGVIYXNoKCR6aXBCeXRlcykgfCBGb3JFYWNoLU9iamVjdCB7ICRfLlRvU3RyaW5nKCJ4MiIpIH0pIC1qb2luICIiDQokbXV0ZXhOYW1lID0gIkdsb2JhbFxKdXN0Q2VmXyRoYXNoIg0KJG11dGV4ID0gTmV3LU9iamVjdCBTeXN0ZW0uVGhyZWFkaW5nLk11dGV4KCRmYWxzZSwgJG11dGV4TmFtZSkNCg0KJG51bGwgPSAkbXV0ZXguV2FpdE9uZSgpDQp0cnkgew0KICBOZXctSXRlbSAtSXRlbVR5cGUgRGlyZWN0b3J5IC1Gb3JjZSAtUGF0aCAoU3BsaXQtUGF0aCAtUGFyZW50ICRaaXBQYXRoKSB8IE91dC1OdWxsDQogIE5ldy1JdGVtIC1JdGVtVHlwZSBEaXJlY3RvcnkgLUZvcmNlIC1QYXRoICRFeHRyYWN0RGlyIHwgT3V0LU51bGwNCg0KICBpZiAoKFRlc3QtUGF0aCAtTGl0ZXJhbFBhdGggJG1hcmtlclZlcnNpb24pIGANCiAgICAgIC1hbmQgKChHZXQtQ29udGVudCAtTGl0ZXJhbFBhdGggJG1hcmtlclZlcnNpb24gLVJhdykuVHJpbSgpIC1lcSAkVmVyc2lvbikgYA0KICAgICAgLWFuZCAoVGVzdC1QYXRoIC1MaXRlcmFsUGF0aCAkWmlwUGF0aCkgYA0KICAgICAgLWFuZCAoVGVzdC1EaXJOb25FbXB0eSAkRXh0cmFjdERpcikpIHsNCiAgICBleGl0IDANCiAgfQ0KDQogIGlmICghKFRlc3QtUGF0aCAtTGl0ZXJhbFBhdGggJFppcFBhdGgpKSB7DQogICAgV3JpdGUtSG9zdCAiSnVzdENlZjogZG93bmxvYWRpbmcgJFVybCINCiAgICAkcGFyZW50ID0gU3BsaXQtUGF0aCAtUGFyZW50ICRaaXBQYXRoDQogICAgJHRtcCA9IEpvaW4tUGF0aCAkcGFyZW50ICgiezB9LnRtcCIgLWYgW1N5c3RlbS5JTy5QYXRoXTo6R2V0UmFuZG9tRmlsZU5hbWUoKSkNCiAgICBJbnZva2UtV2ViUmVxdWVzdCAtVXJpICRVcmwgLU91dEZpbGUgJHRtcCAtVXNlQmFzaWNQYXJzaW5nDQogICAgTW92ZS1JdGVtIC1MaXRlcmFsUGF0aCAkdG1wIC1EZXN0aW5hdGlvbiAkWmlwUGF0aCAtRm9yY2UNCiAgfQ0KDQogIGlmIChUZXN0LVBhdGggLUxpdGVyYWxQYXRoICRFeHRyYWN0RGlyKSB7DQogICAgUmVtb3ZlLUl0ZW0gLUxpdGVyYWxQYXRoICRFeHRyYWN0RGlyIC1SZWN1cnNlIC1Gb3JjZQ0KICB9DQogIE5ldy1JdGVtIC1JdGVtVHlwZSBEaXJlY3RvcnkgLUZvcmNlIC1QYXRoICRFeHRyYWN0RGlyIHwgT3V0LU51bGwNCg0KICAjIFVzZSAuTkVUIFppcEZpbGUuRXh0cmFjdFRvRGlyZWN0b3J5IChzdXBwb3J0cyBvdmVyd3JpdGUgaW4gLk5FVCA4KykNCiAgQWRkLVR5cGUgLUFzc2VtYmx5TmFtZSBTeXN0ZW0uSU8uQ29tcHJlc3Npb24uRmlsZVN5c3RlbQ0KICBbU3lzdGVtLklPLkNvbXByZXNzaW9uLlppcEZpbGVdOjpFeHRyYWN0VG9EaXJlY3RvcnkoJFppcFBhdGgsICRFeHRyYWN0RGlyLCAkdHJ1ZSkNCg0KICAkZW50cmllcyA9IEdldC1DaGlsZEl0ZW0gLUxpdGVyYWxQYXRoICRFeHRyYWN0RGlyIC1Gb3JjZQ0KICBpZiAoJGVudHJpZXMuQ291bnQgLWVxIDEgLWFuZCAkZW50cmllc1swXS5QU0lzQ29udGFpbmVyKSB7DQogICAgJGlubmVyID0gJGVudHJpZXNbMF0uRnVsbE5hbWUNCiAgICAkdG1wRmxhdHRlbiA9ICIke0V4dHJhY3REaXJ9LmZsYXR0ZW4iDQogICAgaWYgKFRlc3QtUGF0aCAtTGl0ZXJhbFBhdGggJHRtcEZsYXR0ZW4pIHsgUmVtb3ZlLUl0ZW0gLUxpdGVyYWxQYXRoICR0bXBGbGF0dGVuIC1SZWN1cnNlIC1Gb3JjZSB9DQogICAgTmV3LUl0ZW0gLUl0ZW1UeXBlIERpcmVjdG9yeSAtRm9yY2UgLVBhdGggJHRtcEZsYXR0ZW4gfCBPdXQtTnVsbA0KDQogICAgR2V0LUNoaWxkSXRlbSAtTGl0ZXJhbFBhdGggJGlubmVyIC1Gb3JjZSB8IEZvckVhY2gtT2JqZWN0IHsNCiAgICAgIE1vdmUtSXRlbSAtTGl0ZXJhbFBhdGggJF8uRnVsbE5hbWUgLURlc3RpbmF0aW9uICR0bXBGbGF0dGVuIC1Gb3JjZQ0KICAgIH0NCg0KICAgIFJlbW92ZS1JdGVtIC1MaXRlcmFsUGF0aCAkRXh0cmFjdERpciAtUmVjdXJzZSAtRm9yY2UNCiAgICBNb3ZlLUl0ZW0gLUxpdGVyYWxQYXRoICR0bXBGbGF0dGVuIC1EZXN0aW5hdGlvbiAkRXh0cmFjdERpciAtRm9yY2UNCiAgfQ0KDQogIFNldC1Db250ZW50IC1MaXRlcmFsUGF0aCAkbWFya2VyVmVyc2lvbiAtVmFsdWUgJFZlcnNpb24gLU5vTmV3bGluZQ0KICBTZXQtQ29udGVudCAtTGl0ZXJhbFBhdGggJG1hcmtlclVybCAtVmFsdWUgJFVybCAtTm9OZXdsaW5lDQp9DQpmaW5hbGx5IHsNCiAgJG11dGV4LlJlbGVhc2VNdXRleCgpIHwgT3V0LU51bGwNCiAgJG11dGV4LkRpc3Bvc2UoKQ0KfQ=="
+            $bytes = [Convert]::FromBase64String($b64)
+            $content = [System.Text.Encoding]::UTF8.GetString($bytes)
+            Set-Content $script -Value $content -NoNewline
           }
 
       - name: Build web assets
