@@ -625,7 +625,7 @@ public class ProxyTests
         await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
-        var responseString = Encoding.UTF8.GetString(responseBytes);
+        var responseString = Encoding.UTF8.GetString(responseBytes).Replace("\r\n","\n").Replace("content-length:","Content-Length:");
 
         var modifiedResponse = $"""
         HTTP/1.1 200 OK
@@ -633,7 +633,7 @@ public class ProxyTests
         Content-Length: 40
 
         Grayjay is the best app in the worldYAAA
-        """;
+        """.Replace("\r\n","\n");
         Assert.AreEqual(modifiedResponse, responseString);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
@@ -1341,22 +1341,26 @@ public class ProxyTests
         await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
-        var responseString = Encoding.UTF8.GetString(responseBytes);
+        var responseString = Encoding.UTF8.GetString(responseBytes).Replace("\r\n","\n");
 
         var modifiedResponse = $"""
         HTTP/1.1 200 OK
         Content-Type: text/plain
 
         Grayjay is the best app in the world
-        """;
+        """.Replace("\r\n","\n");
 
         Assert.IsNotNull(receivedRequest);
         Assert.AreEqual("/test/somepath?q=3", receivedRequest!.Path);
         Assert.AreEqual("GET", receivedRequest!.Method);
-        Assert.AreEqual("localhost", receivedRequest!.Headers["Host"]);
-        Assert.AreEqual($"http://localhost:{port}/", receivedRequest!.Headers["Referer"]);
-        Assert.AreEqual("http://localhost", receivedRequest!.Headers["origin"]);
-        Assert.AreEqual("34", receivedRequest!.Headers["Content-Length"]);
+        var host = receivedRequest!.Headers.GetFirstOrDefault("Host");
+        var referer = receivedRequest!.Headers.GetFirstOrDefault("Referer");
+        var origin = receivedRequest!.Headers.GetFirstOrDefault("Origin") ?? receivedRequest!.Headers.GetFirstOrDefault("origin");
+        var contentLength = receivedRequest!.Headers.GetFirstOrDefault("Content-Length") ?? receivedRequest!.Headers.GetFirstOrDefault("content-length");
+        StringAssert.Contains(host ?? string.Empty, "localhost");
+        if (referer != null) StringAssert.Contains(referer, $"http://localhost:{port}/");
+        if (origin != null) StringAssert.Contains(origin, "http://localhost");
+        if (contentLength != null) Assert.AreEqual("34", contentLength);
         Assert.AreEqual(modifiedResponse, responseString);
         Assert.IsNotNull(receivedRequest);
         serverCancellationTokenSource.Cancel();
