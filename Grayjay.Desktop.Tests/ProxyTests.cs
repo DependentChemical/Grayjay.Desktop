@@ -11,6 +11,7 @@ using Microsoft.VisualBasic;
 namespace Grayjay.Desktop.Tests;
 
 [TestClass]
+[DoNotParallelize]
 public class ProxyTests
 {
     [TestMethod]
@@ -346,10 +347,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -418,10 +420,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -488,10 +491,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -551,10 +555,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -611,10 +616,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -677,10 +683,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -739,10 +746,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -800,10 +808,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -866,10 +875,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         CollectionAssert.AreEqual(response, responseBytes);
@@ -928,10 +938,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         Assert.AreEqual($"""
@@ -996,10 +1007,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         Assert.AreEqual($"""
@@ -1064,10 +1076,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         Assert.AreEqual($"""
@@ -1128,10 +1141,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         Assert.AreEqual($"""
@@ -1192,10 +1206,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         Assert.AreEqual($"""
@@ -1252,7 +1267,8 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         Exception? exception = null;
         _ = Task.Run(async () => 
@@ -1316,10 +1332,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -1401,10 +1418,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -1474,10 +1492,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
@@ -1548,10 +1567,11 @@ public class ProxyTests
         using var outputStream = new MemoryStream();
 
         var combinedStream = new DuplexStream(inputStream, outputStream, true);
-        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => { });
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new HttpProxySession(httpProxy, combinedStream, CancellationToken.None, s => completed.TrySetResult());
 
         session.Start();
-        await Task.Delay(1000);
+        await Task.WhenAny(completed.Task, Task.Delay(5000));
 
         var responseBytes = outputStream.ToArray();
         var responseString = Encoding.UTF8.GetString(responseBytes);
