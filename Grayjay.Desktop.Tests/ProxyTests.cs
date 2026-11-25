@@ -1608,15 +1608,33 @@ public class ProxyTests
     {
         try
         {
-            var client = await listener.AcceptTcpClientAsync();
-            using (var networkStream = client.GetStream())
+            using var client = await listener.AcceptTcpClientAsync(cancellationToken);
+            using var networkStream = client.GetStream();
+            using var httpStream = new HttpProxyStream(networkStream);
+            var request = await httpStream.ReadRequestHeadersAsync(cancellationToken);
+
+            if (request.Headers.TryGetFirst("content-length", out var cls) && int.TryParse(cls, out var len) && len > 0)
             {
-                using var httpStream = new HttpProxyStream(networkStream);
-                var request = await httpStream.ReadRequestHeadersAsync();
-                onRequestReceived(request);
-                await networkStream.WriteAsync(response, 0, response.Length, cancellationToken);
+                var body = new byte[len];
+                var read = 0;
+                while (read < len)
+                {
+                    var r = await httpStream.ReadAsync(body, read, len - read, cancellationToken);
+                    if (r == 0) break;
+                    read += r;
+                }
             }
-            client.Close();
+            else if (request.Headers.TryGetFirst("transfer-encoding", out var te) && te.Equals("chunked", StringComparison.OrdinalIgnoreCase))
+            {
+                using var ms = new MemoryStream();
+                using var bodyStream = new HttpProxyStream(ms);
+                await httpStream.TransferAllChunksAsync(bodyStream, true, cancellationToken);
+            }
+
+            onRequestReceived(request);
+            await networkStream.WriteAsync(response, 0, response.Length, cancellationToken);
+            await networkStream.FlushAsync(cancellationToken);
+            try { client.Client.Shutdown(SocketShutdown.Send); } catch { }
         }
         catch (OperationCanceledException)
         {
