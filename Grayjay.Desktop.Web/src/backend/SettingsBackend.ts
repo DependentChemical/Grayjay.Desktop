@@ -12,6 +12,18 @@ export abstract class SettingsBackend {
         console.info("persistSet", {key, obj});
         await Backend.POST("/settings/PersistSet?key=" + key, JSON.stringify(obj), "application/json") as any;
     }
+    static persistSetKeepalive(key: string, obj: any) {
+        try {
+            void fetch("/settings/PersistSet?key=" + encodeURIComponent(key), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(obj),
+                keepalive: true
+            }).catch(e => console.error("Failed to persist setting.", e));
+        } catch (e) {
+            console.error("Failed to persist setting via keepalive.", e);
+        }
+    }
     
     static async settings(): Promise<ISettingsObject> {
         const settings = await Backend.GET("/settings/Settings") as ISettingsObject;

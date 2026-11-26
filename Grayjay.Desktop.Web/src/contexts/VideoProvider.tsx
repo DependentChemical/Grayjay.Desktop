@@ -106,6 +106,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
     });
 
     let queuePersistTimer: number | undefined;
+    let restoredQueue = false;
     const clearRestorePaused = () => setRestorePaused(false);
     const normalizePersistedState = (videoState: VideoState) => {
         if (videoState === VideoState.Minimized || videoState === VideoState.Closed)
@@ -117,30 +118,49 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             clearTimeout(queuePersistTimer);
             queuePersistTimer = undefined;
         }
-        const write = () => {
-            const q = queue();
-            const i = index();
-            const base = baseQueue();
-            if (!q || !base || i === undefined || i < 0 || i >= q.length) {
-                SettingsBackend.persistSet(QUEUE_PERSIST_KEY, null).catch(e => console.error("Failed to persist queue.", e));
-                return;
-            }
-            const snapshot: PersistedQueue = {
-                v: 1,
-                baseQueue: base,
-                shuffledQueue: shuffledQueue(),
-                index: i,
-                repeat: repeat(),
-                state: normalizePersistedState(state())
-            };
-            SettingsBackend.persistSet(QUEUE_PERSIST_KEY, snapshot).catch(e => console.error("Failed to persist queue.", e));
-        };
         if (immediate) {
-            write();
+            writeQueueSnapshot();
             return;
         }
-        queuePersistTimer = window.setTimeout(write, 300);
+        queuePersistTimer = window.setTimeout(() => writeQueueSnapshot(), 300);
     };
+    const writeQueueSnapshot = (useKeepalive = false) => {
+        const q = queue();
+        const i = index();
+        const base = baseQueue();
+        if (!q || !base || i === undefined || i < 0 || i >= q.length) {
+            if (useKeepalive)
+                SettingsBackend.persistSetKeepalive(QUEUE_PERSIST_KEY, null);
+            else
+                SettingsBackend.persistSet(QUEUE_PERSIST_KEY, null).catch(e => console.error("Failed to persist queue.", e));
+            return;
+        }
+        const snapshot: PersistedQueue = {
+            v: 1,
+            baseQueue: base,
+            shuffledQueue: shuffledQueue(),
+            index: i,
+            repeat: repeat(),
+            state: normalizePersistedState(state())
+        };
+        if (useKeepalive)
+            SettingsBackend.persistSetKeepalive(QUEUE_PERSIST_KEY, snapshot);
+        else
+            SettingsBackend.persistSet(QUEUE_PERSIST_KEY, snapshot).catch(e => console.error("Failed to persist queue.", e));
+    };
+    const flushQueueSnapshot = () => {
+        if (!(restoredQueue || queue() !== undefined))
+            return;
+        if (queuePersistTimer !== undefined) {
+            clearTimeout(queuePersistTimer);
+            queuePersistTimer = undefined;
+        }
+        writeQueueSnapshot(true);
+    };
+    if (typeof window !== "undefined") {
+        window.addEventListener("beforeunload", flushQueueSnapshot);
+        window.addEventListener("pagehide", flushQueueSnapshot);
+    }
 
     // Kept until the view takes it; valid only while its load is still the newest request.
     let preloadedVideoLoad: IVideoLoadResult | undefined;
@@ -445,6 +465,7 @@ export const VideoProvider: ParentComponent<VideoContextProps> = (props) => {
             setState(normalizePersistedState(saved.state));
             setRestorePaused(true);
         });
+        restoredQueue = true;
     }).catch(e => console.error("Failed to restore persisted queue.", e));
 
     return (
